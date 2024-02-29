@@ -65,26 +65,26 @@ function CallScreen() {
           {
             urls: "stun:stun.relay.metered.ca:80",
           },
-          {
-            urls: "turn:standard.relay.metered.ca:80",
-            username: "ec3ee67c7a9f58188572af0a",
-            credential: "hWXfsYZeTlDij524",
-          },
-          {
-            urls: "turn:standard.relay.metered.ca:80?transport=tcp",
-            username:"ec3ee67c7a9f58188572af0a",
-            credential:"hWXfsYZeTlDij524",
-          },
-          {
-            urls: "turn:standard.relay.metered.ca:443",
-            username: "ec3ee67c7a9f58188572af0a",
-            credential: "hWXfsYZeTlDij524",
-          },
-          {
-            urls: "turns:standard.relay.metered.ca:443?transport=tcp",
-            username: "ec3ee67c7a9f58188572af0a",
-            credential: "hWXfsYZeTlDij524",
-          },
+          // {
+          //   urls: "turn:standard.relay.metered.ca:80",
+          //   username: "ec3ee67c7a9f58188572af0a",
+          //   credential: "hWXfsYZeTlDij524",
+          // },
+          // {
+          //   urls: "turn:standard.relay.metered.ca:80?transport=tcp",
+          //   username:"ec3ee67c7a9f58188572af0a",
+          //   credential:"hWXfsYZeTlDij524",
+          // },
+          // {
+          //   urls: "turn:standard.relay.metered.ca:443",
+          //   username: "ec3ee67c7a9f58188572af0a",
+          //   credential: "hWXfsYZeTlDij524",
+          // },
+          // {
+          //   urls: "turns:standard.relay.metered.ca:443?transport=tcp",
+          //   username: "ec3ee67c7a9f58188572af0a",
+          //   credential: "hWXfsYZeTlDij524",
+          // },
         ],
       });
       pc.onicecandidate = onIceCandidate;
