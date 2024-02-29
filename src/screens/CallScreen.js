@@ -10,7 +10,7 @@ function CallScreen() {
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
 
-  const socket = socketio("https://signaling-server-flask.herokuapp.com/", {
+  const socket = socketio("https://signaling-server-pfm2.onrender.com", {
     autoConnect: false,
   });
 
@@ -25,25 +25,6 @@ function CallScreen() {
   };
 
   const startConnection = () => {
-<<<<<<< Updated upstream
-    navigator.mediaDevices
-      .getUserMedia({
-        audio: false,
-        video: {
-          height: 350,
-          width: 350,
-        },
-      })
-      .then((stream) => {
-        console.log("Local Stream found");
-        localVideoRef.current.srcObject = stream;
-        socket.connect();
-        socket.emit("join", { username: localUsername, room: roomName });
-      })
-      .catch((error) => {
-        console.error("Stream not found: ", error);
-      });
-=======
     try {
       socket.connect();
       socket.emit("join", { username: localUsername, room: roomName });
@@ -60,7 +41,6 @@ function CallScreen() {
     socket.on('error', (error) => {
       console.error("An error occurred: ", error);
     });
->>>>>>> Stashed changes
   };
 
   const onIceCandidate = (event) => {
@@ -83,22 +63,27 @@ function CallScreen() {
       pc = new RTCPeerConnection({
         iceServers: [
           {
-            urls: "stun:openrelay.metered.ca:80",
+            urls: "stun:stun.relay.metered.ca:80",
           },
           {
-            urls: "turn:openrelay.metered.ca:80",
-            username: "openrelayproject",
-            credential: "openrelayproject",
+            urls: "turn:standard.relay.metered.ca:80",
+            username: "ec3ee67c7a9f58188572af0a",
+            credential: "hWXfsYZeTlDij524",
           },
           {
-            urls: "turn:openrelay.metered.ca:443",
-            username: "openrelayproject",
-            credential: "openrelayproject",
+            urls: "turn:standard.relay.metered.ca:80?transport=tcp",
+            username:"ec3ee67c7a9f58188572af0a",
+            credential:"hWXfsYZeTlDij524",
           },
           {
-            urls: "turn:openrelay.metered.ca:443?transport=tcp",
-            username: "openrelayproject",
-            credential: "openrelayproject",
+            urls: "turn:standard.relay.metered.ca:443",
+            username: "ec3ee67c7a9f58188572af0a",
+            credential: "hWXfsYZeTlDij524",
+          },
+          {
+            urls: "turns:standard.relay.metered.ca:443?transport=tcp",
+            username: "ec3ee67c7a9f58188572af0a",
+            credential: "hWXfsYZeTlDij524",
           },
         ],
       });
