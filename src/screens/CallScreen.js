@@ -10,13 +10,18 @@ function CallScreen() {
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
 
-  const socket = socketio("https://signaling-server-pfm2.onrender.com", {
+  // const socket = socketio("https://signaling-server-pfm2.onrender.com/", {
+  //   autoConnect: false,
+  // });
+  const socket = socketio("http://127.0.0.1:5004", {
     autoConnect: false,
   });
 
   let pc; // For RTCPeerConnection Object
 
   const sendData = (data) => {
+    // eslint-disable-next-line no-restricted-globals
+    console.log("Sending data: ", data);
     socket.emit("data", {
       username: localUsername,
       room: roomName,
@@ -28,6 +33,7 @@ function CallScreen() {
     try {
       socket.connect();
       socket.emit("join", { username: localUsername, room: roomName });
+      start();
       console.log("Socket connection successful");
     } catch (error) {
       console.error("Socket connection failed: ", error);
@@ -63,7 +69,7 @@ function CallScreen() {
       pc = new RTCPeerConnection({
         iceServers: [
           {
-            urls: "stun:stun.relay.metered.ca:80",
+            urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'],
           },
           // {
           //   urls: "turn:standard.relay.metered.ca:80",
@@ -100,6 +106,7 @@ function CallScreen() {
   };
 
   const setAndSendLocalDescription = (sessionDescription) => {
+    console.log("Session Description: ", sessionDescription)
     pc.setLocalDescription(sessionDescription);
     console.log("Local description set");
     sendData(sessionDescription);
@@ -125,6 +132,7 @@ function CallScreen() {
       pc.setRemoteDescription(new RTCSessionDescription(data));
       sendAnswer();
     } else if (data.type === "answer") {
+      console.log("Handling answer")
       pc.setRemoteDescription(new RTCSessionDescription(data));
     } else if (data.type === "candidate") {
       pc.addIceCandidate(new RTCIceCandidate(data.candidate));
@@ -133,10 +141,55 @@ function CallScreen() {
     }
   };
 
+  function negotiate() {
+    pc.addTransceiver('video', { direction: 'recvonly' });
+    pc.addTransceiver('audio', { direction: 'recvonly' });
+    return pc.createOffer().then((offer) => {
+        return pc.setLocalDescription(offer);
+    }).then(() => {
+        // wait for ICE gathering to complete
+        return new Promise((resolve) => {
+            if (pc.iceGatheringState === 'complete') {
+                resolve();
+            } else {
+                const checkState = () => {
+                    if (pc.iceGatheringState === 'complete') {
+                        pc.removeEventListener('icegatheringstatechange', checkState);
+                        resolve();
+                    }
+                };
+                pc.addEventListener('icegatheringstatechange', checkState);
+            }
+        });
+    }).then(() => {
+        var offer = pc.localDescription;
+        // send the offer to the signaling server
+        socket.emit('offer', {
+          sdp: offer.sdp,
+          type: offer.type,
+          username: localUsername,
+          room: roomName,
+        });
+        console.log("Offer sent");
+    }).catch((e) => {
+        alert(e);
+    });
+  }
+
   socket.on("ready", () => {
     console.log("Ready to Connect!");
     createPeerConnection();
     sendOffer();
+  });
+
+  socket.on("offer", (data) => {
+    console.log("Offer received");
+    signalingDataHandler(data);
+  });
+
+  socket.on("answer", (data) => {
+    console.log("Answer received");
+    signalingDataHandler(data);
   });
 
   socket.on("data", (data) => {
@@ -151,12 +204,51 @@ function CallScreen() {
     };
   }, []);
 
+  
+  function start() {
+    var config = {
+        sdpSemantics: 'unified-plan'
+    };
+
+    // if (document.getElementById('use-stun').checked) {
+    //     config.iceServers = [{ urls: ['stun:stun.l.google.com:19302'] }];
+    // }
+
+    pc = new RTCPeerConnection(config);
+
+    // connect audio / video
+    pc.addEventListener('track', (evt) => {
+        if (evt.track.kind === 'video') {
+            localVideoRef.current.srcObject = evt.streams[0];
+        }
+        // else {
+        //     audioRef.current.srcObject = evt.streams[0];
+        // }
+    });
+
+    // document.getElementById('start').style.display = 'none';
+    negotiate();
+    // document.getElementById('stop').style.display = 'inline-block';
+}
+
+function stop() {
+    document.getElementById('stop').style.display = 'none';
+
+    // close peer connection
+    setTimeout(() => {
+        pc.close();
+    }, 500);
+}
+
+
   return (
     <div>
       <label>{"Username: " + localUsername}</label>
       <label>{"Room Id: " + roomName}</label>
       <video autoPlay muted playsInline ref={localVideoRef} />
       <video autoPlay muted playsInline ref={remoteVideoRef} />
+      {/* <button id="start" onClick={start}>Start</button>
+      <button id="stop" style={{ display: "none" }} onClick={stop}>Stop</button> */}
     </div>
   );
 }
