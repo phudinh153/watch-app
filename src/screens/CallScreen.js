@@ -10,12 +10,12 @@ function CallScreen() {
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
 
-  // const socket = socketio("https://signaling-server-pfm2.onrender.com/", {
-  //   autoConnect: false,
-  // });
-  const socket = socketio("http://127.0.0.1:5004", {
+  const socket = socketio("https://signaling-server-pfm2.onrender.com/", {
     autoConnect: false,
   });
+  // const socket = socketio("http://127.0.0.1:5004", {
+  //   autoConnect: false,
+  // });
 
   let pc; // For RTCPeerConnection Object
 
@@ -126,20 +126,38 @@ function CallScreen() {
     });
   };
 
-  const signalingDataHandler = (data) => {
-    if (data.type === "offer") {
-      createPeerConnection();
-      pc.setRemoteDescription(new RTCSessionDescription(data));
-      sendAnswer();
-    } else if (data.type === "answer") {
-      console.log("Handling answer")
-      pc.setRemoteDescription(new RTCSessionDescription(data));
-    } else if (data.type === "candidate") {
-      pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+const signalingDataHandler = (data) => {
+  if (data.type === "offer") {
+    createPeerConnection();
+    pc.setRemoteDescription(new RTCSessionDescription(data))
+      .then(() => pc.createAnswer())
+      .then(answer => setAndSendLocalDescription(answer))
+      .catch(error => console.error("Error handling offer: ", error));
+  } else if (data.type === "answer") {
+    if (pc.signalingState === "have-local-offer") {
+      let rtc_data = {
+        type: data["type"],
+        sdp: data["sdp"]
+      };
+      pc.setRemoteDescription(new RTCSessionDescription(rtc_data))
+        .catch(error => console.error("Error setting remote description: ", error));
     } else {
-      console.log("Unknown Data");
+      console.log("Cannot handle answer in current state: ", pc.signalingState);
     }
-  };
+  } else if (data.type === "candidate") {
+    if (pc.signalingState !== "closed" && pc.remoteDescription) {
+      try {
+        pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+      } catch (error) {
+        console.error("Error adding ICE candidate: ", error);
+      }
+    } else {
+      console.log("Cannot add ICE candidate in current state: ", pc.signalingState);
+    }
+  } else {
+    console.log("Unknown Data");
+  }
+};
 
   function negotiate() {
     pc.addTransceiver('video', { direction: 'recvonly' });
@@ -170,7 +188,8 @@ function CallScreen() {
           username: localUsername,
           room: roomName,
         });
-        console.log("Offer sent");
+      console.log("Offer sent");
+      console.log(offer)
     }).catch((e) => {
         alert(e);
     });
@@ -189,13 +208,14 @@ function CallScreen() {
 
   socket.on("answer", (data) => {
     console.log("Answer received");
+    console.log(data);
     signalingDataHandler(data);
   });
 
-  socket.on("data", (data) => {
-    console.log("Data received: ", data);
-    signalingDataHandler(data);
-  });
+  // socket.on("data", (data) => {
+  //   console.log("Data received: ", data);
+  //   signalingDataHandler(data);
+  // });
 
   useEffect(() => {
     startConnection();
