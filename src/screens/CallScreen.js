@@ -134,6 +134,7 @@ const signalingDataHandler = (data) => {
       .then(answer => setAndSendLocalDescription(answer))
       .catch(error => console.error("Error handling offer: ", error));
   } else if (data.type === "answer") {
+    console.log("pc.signalingState: ", pc.signalingState);
     if (pc.signalingState === "have-local-offer") {
       let rtc_data = {
         type: data["type"],
